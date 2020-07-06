@@ -5,7 +5,7 @@
 <div id="user" value="<%= JSON.stringify(user) %>" style="display: none;"></div>
 <div id="group" value="<%= group %>" style="display: none;"></div>
 
-<section class="box box-danger" style="padding: 0px">
+<section class="box box-danger" style="margin-top: -8px; margin-bottom: -8px; padding: 0px">
     <div class="box-body">
       <div id="vue-chat-element">
         <div class="messaging">
@@ -13,7 +13,7 @@
             <div class="inbox_people">
               <div class="headind_srch">
                 <div class="recent_heading">
-                  <h4>Users</h4>
+                  <h4>Users <span></span></h4>
                 </div>
               </div>
 
@@ -25,7 +25,10 @@
                   </span> </div>
               </div>
 
-              <div class="inbox_chat"> </div>
+              <div class="inbox_chat">
+                <div class="self"></div>
+                <div class="others"></div>
+              </div>
             </div>
             <div class="mesgs">
               <div class="headind_srch">
@@ -74,10 +77,28 @@
   socket.emit('group:join', { user, group })
 
   socket.on('user:list', (users) => {
-    userList.innerHTML = ''
+    const currentUser = user
+
+    userList.querySelector('.self').innerHTML = ''
+    userList.querySelector('.others').innerHTML = ''
+
     users.forEach((user) => {
-      userList.appendChild(renderUserIn(user))
+      if(user.username !== currentUser.username) return
+
+      userList.querySelector('.self')
+              .appendChild(renderUserIn(user, true))
     })
+    users.forEach((user) => {
+      if(user.username === currentUser.username) return
+
+      userList.querySelector('.others')
+              .appendChild(renderUserIn(user))
+    })
+
+    document.querySelector('.recent_heading')
+            .querySelector('h4')
+            .querySelector('span')
+            .innerHTML = `(${users.length})`
   })
   socket.on('message:in', (message) => {
     messageHistory.appendChild(renderMessageIn(message))
@@ -114,11 +135,11 @@
 
     div.classList.add('incoming_msg')
     div.innerHTML = `
-      <div class="incoming_msg_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
+      <div class="incoming_msg_img" style="background: ${msg.color}">${msg.username.substring(0,2).toUpperCase()}</div>
       <div class="received_msg">
         <div class="received_withd_msg">
           <p>
-            <span style="font-weight: bold">${msg.username}</span>
+            <span style="font-weight: bold; color: ${msg.color}">@${msg.username}</span>
             <br>
             ${msg.message}
           </p>
@@ -136,6 +157,8 @@
     div.innerHTML = `
       <div class="sent_msg">
         <p>
+          <span style="font-weight: bold">@you</span>
+          <br>
           ${msg.message}
         </p>
         <span class="time_date">${msg.created_at}</span>
@@ -143,17 +166,19 @@
     `
     return div
   }
-  function renderUserIn(user)
+  function renderUserIn(user, isActive=false)
   {
     const div = document.createElement('div')
 
     div.classList.add('chat_list')
 
+    if(isActive) div.classList.add('active_chat')
+
     div.innerHTML = `
       <div class="chat_people" style="padding-top: 10px;">
-        <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="user-profile"> </div>
+        <div class="chat_img" style="background: ${user.color}">${user.username.substring(0,2).toUpperCase()}</div>
         <div class="chat_ib">
-          <label class="label label-default">${user.username}</label>
+          <label class="label label-default" style="color: ${user.color}">${user.username}</label>
           <h5>${user.join_at}</h5>
         </div>
       </div>

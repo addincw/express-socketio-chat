@@ -44,52 +44,42 @@ ws.on('connection', (socket) => {
 
         /** event emitter */
         //emmit event only for current connection
-        socket.emit('message:in', formatter.message(username, 'welcome to socketio-chat'))
+
         //emmit event except current connection
         socket.broadcast
                 .to(group)
                 .emit('message:in', formatter.message(username, `${user.username} has join the chat`))
         //emmit event to all connection
-        ws.to(group).emit('user:list', userList)
-
-        /** event listener */
-        socket.on('message:out', (msg) => {
-            let { username, message } = msg
-            
-            socket.broadcast
-                    .to(group)
-                    .emit('message:in', formatter.message(username, message))
-        })
-        socket.on('disconnect', () => {
-            console.log(`called`)
-            const user =  mUser.delete(socket.id)
-
-            socket.broadcast
-                    .to(group)
-                    .emit('message:in', formatter.message(username, `${user.username} has left the chat`))
-
-            ws.to(group).emit('user:list', mUser.get(group))
-        })
+        ws.to(user.group).emit('user:list', userList)
     })
 
     /** event emitter */
-    // //emmit event except current connection
-    // socket.broadcast.emit('message:in', formatter.message(username, 'user has join the chat'))
-    // //emmit event only for current connection
-    // socket.emit('message:in', formatter.message(username, 'welcome to socketio-chat'))
-    // //emmit event to all connection
+    //emmit event except current connection
 
+    //emmit event only for current connection
+    socket.emit('message:in', formatter.message(username, 'welcome to socketio-chat'))
+    //emmit event to all connection
+    
     /** event listener */
     // socket.on('user:in', (user) => {
     //     socket.broadcast.emit('user:in', user)
     // })
-    // socket.on('message:out', (msg) => {
-    //     const { username, message } = msg
-    //     socket.broadcast.emit('message:in', formatter.message(username, message))
-    // })
-    // socket.on('disconnect', () => {
-    //     socket.broadcast.emit('message:in', formatter.message(username, 'user has left the chat'))
-    // })
+    socket.on('message:out', (msg) => {
+        const user = mUser.find(socket.id)
+        let { username, message } = msg
+        
+        socket.broadcast
+                .to(user.group)
+                .emit('message:in', formatter.message(user.username, message, user.color))
+    })
+    socket.on('disconnect', () => {
+        const user =  mUser.delete(socket.id)
+
+        if(user) {
+            ws.to(user.group).emit('message:in', formatter.message(username, `${user.username} has left the chat`))
+            ws.to(user.group).emit('user:list', mUser.get(user.group))
+        }
+    })
 })
 
 server.listen(PORT, () => console.log(`server is running on port : ${PORT}`))
