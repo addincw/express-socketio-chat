@@ -1,11 +1,11 @@
 const moment = require('moment')
 
 module.exports = {
-    "user": function(username) {
+    "user": function(id, username, group) {
         const join_at = moment().format('h:mm a')
-        return { username, join_at }
+        return { id, username, group, join_at }
     },
-    "message": function(message, username='Bot') {
+    "message": function(username, message) {
         const created_at = moment().format('h:mm a')
         return { username, message, created_at }
     }

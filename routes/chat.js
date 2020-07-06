@@ -5,7 +5,7 @@ const formatter = require('../helpers/formater')
 
 router.get('/', (request, response) => {
     const { username, group } = request.query
-    const user = formatter.user(username)
+    const user = formatter.user('', username, group)
 
     response.render('chat/index', { user, group })
 })
