@@ -1,0 +1,160 @@
+<%- contentFor('css') %>
+<link rel="stylesheet" href="./css/chat.css">
+<%- contentFor('body') %>
+<div id="user" value="<%= JSON.stringify(user) %>" style="display: none;"></div>
+
+<section class="box box-danger" style="padding: 0px">
+    <div class="box-body">
+      <div id="vue-chat-element">
+        <div class="messaging">
+          <div class="inbox_msg">
+            <div class="inbox_people">
+              <div class="headind_srch">
+                <div class="recent_heading">
+                  <h4>Users</h4>
+                </div>
+              </div>
+
+              <div class="srch_bar">
+                <div class="stylish-input-group">
+                  <input type="text" class="search-bar"  placeholder="Search" >
+                  <span class="input-group-addon">
+                  <button type="button"> <i class="fa fa-search" aria-hidden="true"></i> </button>
+                  </span> </div>
+              </div>
+
+              <div class="inbox_chat"> </div>
+            </div>
+            <div class="mesgs">
+              <div class="headind_srch">
+                <div class="msg_heading">
+                  <div class="chat_people">
+                    <!-- <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div> -->
+                    <div class="chat_ib">
+                      <h5>
+                        <label class="label label-default">You're in</label>
+                        <%= group %> Group
+                      </h5>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="msg_history" ref="msg_history" style="padding-top: 40px;"> </div>
+
+              <div class="type_msg">
+                <div class="input_msg_write">
+                  <input type="text" class="write_msg" placeholder="Type a message" />
+                  <button class="msg_send_btn" onclick="sendMessage()">
+                      <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- <p class="text-center top_spac"> Design by <a target="_blank" href="#">Sunil Rajput</a></p> -->
+        </div>
+      </div>
+    </div>
+</section>
+<%- contentFor('js') %>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.27.0/moment.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io()
+  const userList = document.querySelector('.inbox_chat')
+  const messageHistory = document.querySelector('.msg_history')
+  const messageField = document.querySelector('.write_msg')
+
+  //init curent user
+  const currentUser = JSON.parse(document.getElementById('user').getAttribute('value'))
+  socket.emit('user:in', currentUser)
+  userList.appendChild(renderUserIn(currentUser, true))
+
+  socket.on('user:in', (user) => {
+    userList.appendChild(renderUserIn(user))
+  })
+  socket.on('message:in', (message) => {
+    messageHistory.appendChild(renderMessageIn(message))
+    messageHistory.scrollTop = messageHistory.scrollHeight
+  })
+
+  messageField.addEventListener("keyup", function(event) {
+    if (event.keyCode === 13) {
+      event.preventDefault();
+      document.querySelector('.msg_send_btn').click();
+    }
+  })
+
+  function sendMessage()
+  {
+    const { username } = currentUser
+    const created_at = moment().format('h:mm a')
+    const message = messageField.value
+
+    if(message === '') return
+
+    const payload = { username, message, created_at }
+    socket.emit('message:out', payload)
+    
+    messageHistory.appendChild(renderMessageOut(payload))
+    messageHistory.scrollTop = messageHistory.scrollHeight
+
+    messageField.value = ''
+    messageField.focus()
+  }
+  function renderMessageIn(msg)
+  {
+    const div = document.createElement('div')
+
+    div.classList.add('incoming_msg')
+    div.innerHTML = `
+      <div class="incoming_msg_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
+      <div class="received_msg">
+        <div class="received_withd_msg">
+          <p>
+            <span style="font-weight: bold">${msg.username}</span>
+            <br>
+            ${msg.message}
+          </p>
+          <span class="time_date">${msg.created_at}</span>
+        </div>
+      </div>
+    `
+    return div
+  }
+  function renderMessageOut(msg)
+  {
+    const div = document.createElement('div')
+
+    div.classList.add('outgoing_msg')
+    div.innerHTML = `
+      <div class="sent_msg">
+        <p>
+          ${msg.message}
+        </p>
+        <span class="time_date">${msg.created_at}</span>
+      </div>
+    `
+    return div
+  }
+  function renderUserIn(user, isActive=false)
+  {
+    const div = document.createElement('div')
+
+    div.classList.add('chat_list')
+
+    if(isActive) div.classList.add('active_chat')
+
+    div.innerHTML = `
+      <div class="chat_people" style="padding-top: 10px;">
+        <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="user-profile"> </div>
+        <div class="chat_ib">
+          <label class="label label-default">${user.username}</label>
+          <h5>${user.join_at}</h5>
+        </div>
+      </div>
+    `
+    return div
+  }
+</script>
